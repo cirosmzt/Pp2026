@@ -1064,20 +1064,16 @@ function doImport(){
     if(data.sims)  storeSave('sims',data.sims);
     if(data.streak)storeSave('streak',data.streak);
     if(err) err.style.display='none';
-    // Mostra conferma con riepilogo dati importati
-    const stats=data.stats||{};
-    const weak=data.weak||{};
-    const sims=data.sims||[];
+    // Toast conferma con riepilogo
+    const st=data.stats||{}, wk=data.weak||{}, sm=data.sims||[];
     let tot=0,cor=0;
-    Object.values(stats).forEach(s=>{tot+=s.asked||0;cor+=s.correct||0;});
+    Object.values(st).forEach(s=>{tot+=s.asked||0;cor+=s.correct||0;});
     const pct=tot>0?Math.round(cor/tot*100):0;
-    // Toast di conferma verde
     const toast=document.createElement('div');
-    toast.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#166534;color:white;padding:16px 20px;text-align:center;font-size:.9rem;line-height:1.6;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-    toast.innerHTML=`✅ <strong>Progressi importati con successo!</strong><br>
-      📊 Media: ${pct}% &nbsp;|&nbsp; 📝 ${tot} domande &nbsp;|&nbsp; ⚠️ ${Object.keys(weak).length} da ripassare &nbsp;|&nbsp; ⏱️ ${sims.length} simulazioni`;
+    toast.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#166534;color:white;padding:16px 20px;text-align:center;font-size:.88rem;line-height:1.7;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+    toast.innerHTML='✅ <strong>Progressi importati con successo!</strong><br>📊 Media: '+pct+'% &nbsp;|&nbsp; 📝 '+tot+' domande &nbsp;|&nbsp; ⚠️ '+Object.keys(wk).length+' da ripassare &nbsp;|&nbsp; ⏱️ '+sm.length+' simulazioni';
     document.body.appendChild(toast);
-    setTimeout(()=>toast.remove(), 5000);
+    setTimeout(()=>toast.remove(),5000);
     showProgress();
   } else {
     if(err){ err.textContent='❌ Codice non valido. Usa il pulsante ⬇️ Scarica file .txt per esportare e 📂 Apri file per importare.'; err.style.display='block'; }
