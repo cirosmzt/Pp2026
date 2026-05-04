@@ -310,6 +310,21 @@ body{font-family:"OpenDyslexic",Georgia,serif;background:var(--bg);color:var(--t
       </div>
     </div>
   </div>
+  <!-- Pulsante Esci sicuro -->
+  <div style="margin-top:16px;text-align:center">
+    <button onclick="showExitAppConfirm()" style="background:none;border:none;color:var(--mu);font-size:.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">⏏️ Esci dall'app</button>
+  </div>
+  <!-- Dialog esci app -->
+  <div id="exitAppDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px">
+    <div style="background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-size:2rem;margin-bottom:12px">⏏️</div>
+      <h3 style="color:var(--primary);margin-bottom:8px">Vuoi uscire dall'app?</h3>
+      <p style="font-size:.82rem;color:var(--mu);margin-bottom:16px;line-height:1.6">Prima di uscire ti consigliamo di <strong>salvare i progressi</strong> così non li perdi se cambi dispositivo.</p>
+      <button onclick="exitAppSaveFirst()" class="btn" style="width:100%;background:#1e3a5f;color:white;border:none;padding:12px;margin-bottom:8px;font-size:.9rem">💾 Salva progressi e poi esci</button>
+      <button onclick="exitAppForce()" class="btn" style="width:100%;background:#fee2e2;color:var(--err);border:2px solid var(--err);padding:10px;margin-bottom:8px;font-size:.82rem">⏏️ Esci senza salvare</button>
+      <button onclick="cancelExitApp()" class="btn" style="width:100%;background:#f0f4f8;color:var(--primary);border:2px solid var(--brd);padding:10px;font-size:.82rem">← Annulla, rimango</button>
+    </div>
+  </div>
 </div>
 
 <!-- STUDY SETUP -->
@@ -910,18 +925,58 @@ function showProgress(){
 }
 
 function showResetConfirm(){
-  const a=$i('resetAsk'), c=$i('resetConfirm');
-  if(a) a.style.display='none';
-  if(c) c.style.display='block';
+  $i('resetAsk').style.display='none';
+  $i('resetConfirm').style.display='block';
+  const s=$i('resetSaveFirst'); if(s) s.style.display='none';
+}
+function showResetSaveFirst(){
+  $i('resetConfirm').style.display='none';
+  $i('resetSaveFirst').style.display='block';
 }
 function cancelReset(){
-  const a=$i('resetAsk'), c=$i('resetConfirm');
-  if(a) a.style.display='inline-block';
-  if(c) c.style.display='none';
+  $i('resetAsk').style.display='inline';
+  const c=$i('resetConfirm'); if(c) c.style.display='none';
+  const s=$i('resetSaveFirst'); if(s) s.style.display='none';
+}
+function resetSaveAndClear(){
+  // Scarica backup poi azzera
+  downloadProgressi();
+  setTimeout(()=>{ doResetProgress(); }, 1000);
 }
 function doResetProgress(){
   ['stats','weak','sims','streak'].forEach(k=>{ try{ localStorage.removeItem(PFX+k); }catch(e){} });
+  cancelReset();
   showProgress();
+}
+
+/* ── ESCI DALL'APP ── */
+function showExitAppConfirm(){
+  const d=$i('exitAppDialog');
+  if(d){ d.style.display='flex'; }
+}
+function cancelExitApp(){
+  const d=$i('exitAppDialog');
+  if(d){ d.style.display='none'; }
+}
+function exitAppSaveFirst(){
+  downloadProgressi();
+  setTimeout(()=>{
+    cancelExitApp();
+    // Mostra messaggio
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#166534;color:white;padding:12px 20px;border-radius:12px;font-size:.85rem;z-index:9999;text-align:center';
+    toast.innerHTML='💾 Progressi salvati!<br><span style="font-size:.75rem;opacity:.8">Puoi chiudere la scheda del browser</span>';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(), 4000);
+  }, 800);
+}
+function exitAppForce(){
+  cancelExitApp();
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e3a5f;color:white;padding:12px 20px;border-radius:12px;font-size:.85rem;z-index:9999;text-align:center';
+  toast.innerHTML='Chiudi la scheda del browser per uscire';
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 3000);
 }
 
 function exportData(){
@@ -1418,15 +1473,28 @@ window.addEventListener('appinstalled',()=>{ hidePWABar(); });
   <h2>📊 I miei progressi</h2>
   <div id="progContent"></div>
   <br>
-  <button id="resetAsk" onclick="showResetConfirm()" class="btn" style="width:100%;background:#fee2e2;color:var(--err);border:2px solid var(--err);padding:10px;margin-bottom:8px">🗑️ Azzera tutti i progressi</button>
-  <div id="resetConfirm" style="display:none;background:#fee2e2;border:2px solid var(--err);border-radius:12px;padding:14px;margin-bottom:8px;text-align:center">
-    <div style="font-size:.85rem;font-weight:bold;color:var(--err);margin-bottom:10px">⚠️ Sei sicuro? Tutti i progressi verranno eliminati.</div>
+  <button class="btn bs" style="width:100%;padding:12px;margin-bottom:16px" onclick="goHome()">← Menu principale</button>
+  <!-- Azzera progressi — nascosto e protetto -->
+  <div style="text-align:center;margin-top:8px">
+    <button id="resetAsk" onclick="showResetConfirm()" style="background:none;border:none;color:#aaa;font-size:.72rem;cursor:pointer;text-decoration:underline;font-family:inherit">🗑️ Azzera tutti i progressi</button>
+  </div>
+  <!-- Step 1: conferma -->
+  <div id="resetConfirm" style="display:none;background:#fee2e2;border:2px solid var(--err);border-radius:12px;padding:14px;margin-top:8px;text-align:center">
+    <div style="font-size:.85rem;font-weight:bold;color:var(--err);margin-bottom:8px">⚠️ Sei sicuro di voler azzerare?</div>
+    <div style="font-size:.78rem;color:var(--mu);margin-bottom:12px">Questa operazione elimina tutti i tuoi progressi. Non è reversibile.</div>
     <div style="display:flex;gap:8px">
-      <button onclick="doResetProgress()" class="btn" style="flex:1;background:var(--err);color:white;border:none;padding:10px">Sì, azzera</button>
-      <button onclick="cancelReset()" class="btn" style="flex:1;background:white;color:var(--err);border:2px solid var(--err);padding:10px">Annulla</button>
+      <button onclick="showResetSaveFirst()" class="btn" style="flex:1;background:var(--err);color:white;border:none;padding:10px;font-size:.82rem">Sì, voglio azzerare</button>
+      <button onclick="cancelReset()" class="btn" style="flex:1;background:white;color:var(--err);border:2px solid var(--err);padding:10px;font-size:.82rem">Annulla</button>
     </div>
   </div>
-  <button class="btn bs" style="width:100%;padding:12px" onclick="goHome()">← Menu principale</button>
+  <!-- Step 2: salva prima -->
+  <div id="resetSaveFirst" style="display:none;background:#fff8e1;border:2px solid #f59e0b;border-radius:12px;padding:14px;margin-top:8px;text-align:center">
+    <div style="font-size:.85rem;font-weight:bold;color:#92400e;margin-bottom:8px">💾 Salva prima i progressi?</div>
+    <div style="font-size:.78rem;color:#78350f;margin-bottom:12px">Ti consigliamo di scaricare il file di backup prima di azzerare.</div>
+    <button onclick="resetSaveAndClear()" class="btn" style="width:100%;background:#1e3a5f;color:white;border:none;padding:10px;margin-bottom:8px;font-size:.82rem">💾 Scarica backup e poi azzera</button>
+    <button onclick="doResetProgress()" class="btn" style="width:100%;background:#fee2e2;color:var(--err);border:2px solid var(--err);padding:10px;font-size:.82rem">🗑️ Azzera senza salvare</button>
+    <button onclick="cancelReset()" class="btn" style="width:100%;background:#f0f4f8;color:var(--primary);border:2px solid var(--brd);padding:10px;margin-top:4px;font-size:.82rem">← Annulla</button>
+  </div>
 </div>
 
 </body>
