@@ -263,7 +263,7 @@ body{font-family:"OpenDyslexic",Georgia,serif;background:var(--bg);color:var(--t
   <div class="hdr-row">
     <div style="flex:1">
       <div class="hdr-t">🎓 Polizia Penitenziaria 2026</div>
-      <div class="hdr-s">Banca Dati — Studio con metodo</div>
+      <div class="hdr-s">Banca Dati — Studio con metodo &nbsp;·&nbsp; v22</div>
     </div>
     <div class="fc">
       <button class="fb" onclick="chFS(-1)">A-</button>
@@ -898,7 +898,7 @@ function showProgress(){
           <button onclick="shareVia('email')" class="btn" style="padding:11px;background:#f1f5f9;color:#1e3a5f;border:2px solid var(--brd);font-size:.85rem;font-weight:bold">📧 Email</button>
           <button onclick="shareVia('notes')" class="btn" style="padding:11px;background:#f1f5f9;color:#1e3a5f;border:2px solid var(--brd);font-size:.85rem;font-weight:bold">📝 Note</button>
         </div>
-        <button onclick="downloadProgressi()" class="btn" style="width:100%;padding:11px;background:#1e3a5f;color:white;border:none;font-size:.85rem;font-weight:bold;border-radius:10px">⬇️ Scarica file .txt</button>
+        <button onclick="downloadProgressiJson()" class="btn" style="width:100%;padding:12px;background:#166534;color:white;border:none;font-size:.88rem;font-weight:bold;border-radius:10px">⬇️ Scarica file .json</button>
         <div style="font-size:.7rem;color:var(--mu);margin-top:6px;text-align:center">oppure incolla manualmente dove preferisci</div>
       </div>
     </div>
@@ -908,7 +908,7 @@ function showProgress(){
         <div style="font-size:.72rem;color:var(--mu);margin-bottom:5px">📁 Hai il file progressi_PP2026.txt?</div>
         <label style="display:block;width:100%;padding:12px;background:#e0f2fe;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:10px;text-align:center;font-weight:bold;font-size:.9rem;cursor:pointer;box-sizing:border-box">
           📂 Apri file dal dispositivo
-          <input type="file" accept=".txt" onchange="importFromFile(this)" style="display:none">
+          <input type="file" accept=".json,.txt" onchange="importFromFile(this)" style="display:none">
         </label>
       </div>
       <div style="text-align:center;font-size:.75rem;color:var(--mu);margin:8px 0">oppure incolla il codice manualmente</div>
@@ -939,8 +939,7 @@ function cancelReset(){
   const s=$i('resetSaveFirst'); if(s) s.style.display='none';
 }
 function resetSaveAndClear(){
-  // Scarica backup poi azzera
-  downloadProgressi();
+  downloadProgressiJson();
   setTimeout(()=>{ doResetProgress(); }, 1000);
 }
 function doResetProgress(){
@@ -959,7 +958,7 @@ function cancelExitApp(){
   if(d){ d.style.display='none'; }
 }
 function exitAppSaveFirst(){
-  downloadProgressi();
+  downloadProgressiJson();
   setTimeout(()=>{
     cancelExitApp();
     // Mostra messaggio
@@ -979,10 +978,36 @@ function exitAppForce(){
   setTimeout(()=>toast.remove(), 3000);
 }
 
+// Versione corrente formato dati — aggiornare ad ogni cambio struttura
+const DATA_VERSION='1.0';
+
+function getDeviceInfo(){
+  const ua=navigator.userAgent;
+  if(/iPhone|iPad/i.test(ua)) return 'iPhone/iPad';
+  if(/Android/i.test(ua)) return 'Android';
+  if(/Windows/i.test(ua)) return 'PC-Windows';
+  if(/Mac/i.test(ua)) return 'Mac';
+  return 'Altro';
+}
+
 function exportData(){
-  const data={ stats:getStats(), weak:getWeak(), sims:getSims(), streak:getStreak(), v:1 };
+  const now=new Date();
+  const dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const data={
+    metadata:{
+      versione_file: DATA_VERSION,
+      ultimo_aggiornamento: dateStr,
+      dispositivo_origine: getDeviceInfo(),
+      app: 'PP2026 Studio con Metodo'
+    },
+    dati_app:{
+      stats: getStats(),
+      weak: getWeak(),
+      sims: getSims(),
+      streak: getStreak()
+    }
+  };
   const json=JSON.stringify(data);
-  // Encoding moderno compatibile Edge/Chrome/Safari/Firefox
   const bytes=new TextEncoder().encode(json);
   const b64=btoa(String.fromCharCode(...bytes));
   const eb=$i('exportBox'), ib=$i('importBox');
@@ -995,33 +1020,75 @@ function exportData(){
 
 function importFromFile(input){
   if(!input.files||!input.files[0]) return;
+  const file=input.files[0];
+  const errEl=$i('importErr');
+  // Controllo file vuoto
+  if(file.size===0){
+    if(errEl){ errEl.textContent='❌ Il file è vuoto.'; errEl.style.display='block'; }
+    return;
+  }
+  // Controllo dimensione anomala (>2MB = probabilmente sbagliato)
+  if(file.size>2*1024*1024){
+    if(errEl){ errEl.textContent='❌ File troppo grande. Assicurati di importare il file progressi corretto.'; errEl.style.display='block'; }
+    return;
+  }
   const reader=new FileReader();
   reader.onload=function(e){
-    const text=e.target.result;
-    // Estrai il codice — cerca la riga più lunga (il base64)
+    const text=(e.target.result||'').trim();
+    if(!text){
+      if(errEl){ errEl.textContent='❌ File vuoto o illeggibile.'; errEl.style.display='block'; }
+      return;
+    }
+    // Gestisci .json direttamente
+    if(file.name.endsWith('.json')){
+      try{
+        const parsed=JSON.parse(text);
+        const result=parseImportData(parsed);
+        applyImportData(result, errEl);
+        return;
+      }catch(e){
+        if(errEl){ errEl.textContent='❌ File JSON corrotto o non valido.'; errEl.style.display='block'; }
+        return;
+      }
+    }
+    // Gestisci .txt (base64) — compatibilità vecchio formato
     const lines=text.split('\n');
     const codeLine=lines.find(l=>l.trim().length>100);
-    // Metti nella textarea e importa
     const ta=$i('importTA');
     if(ta){ 
       ta.value=codeLine ? codeLine.trim() : text.replace(/\s+/g,'');
       doImport();
     }
   };
-  reader.readAsText(input.files[0]);
+  reader.onerror=function(){
+    if(errEl){ errEl.textContent='❌ Errore nella lettura del file.'; errEl.style.display='block'; }
+  };
+  reader.readAsText(file);
 }
 
-function downloadProgressi(){
-  const ta=$i('exportTA'); if(!ta)return;
-  const code=ta.value;
-  const txt='PROGRESSI PP2026\nIncolla questo codice nella sezione Importa dell app:\n\n'+code;
-  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+// downloadProgressi (.txt) rimosso — usa downloadProgressiJson()
+function downloadProgressiJson(){
+  const now=new Date();
+  const dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const data={
+    metadata:{
+      versione_file: DATA_VERSION,
+      ultimo_aggiornamento: dateStr,
+      dispositivo_origine: getDeviceInfo(),
+      app: 'PP2026 Studio con Metodo'
+    },
+    dati_app:{
+      stats: getStats(),
+      weak: getWeak(),
+      sims: getSims(),
+      streak: getStreak()
+    }
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;
-  a.download='progressi_PP2026.txt';
-  document.body.appendChild(a);
-  a.click();
+  a.href=url; a.download='progressi_PP2026_'+dateStr+'.json';
+  document.body.appendChild(a); a.click();
   setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
 }
 
@@ -1086,6 +1153,56 @@ function importData(){
   const err=$i('importErr'); if(err) err.style.display='none';
 }
 
+// Estrae e valida i dati dal JSON (nuovo formato con metadata O vecchio formato)
+function parseImportData(parsed){
+  if(!parsed) return null;
+  
+  // NUOVO formato con metadata
+  if(parsed.metadata && parsed.dati_app){
+    const ver=parsed.metadata.versione_file||'?';
+    const device=parsed.metadata.dispositivo_origine||'?';
+    const date=parsed.metadata.ultimo_aggiornamento||'?';
+    console.log(`Importando dati v${ver} da ${device} del ${date}`);
+    // Controllo compatibilità versione
+    const curMajor=parseInt((DATA_VERSION||'1').split('.')[0]);
+    const fileMajor=parseInt((ver||'1').split('.')[0]);
+    if(fileMajor > curMajor){
+      return {error:`Il file è versione ${ver} ma l'app supporta fino alla ${DATA_VERSION}. Aggiorna l'app.`};
+    }
+    const d=parsed.dati_app;
+    return { stats:d.stats, weak:d.weak, sims:d.sims, streak:d.streak, meta:parsed.metadata };
+  }
+  
+  // VECCHIO formato (compatibilità retroattiva)
+  if(parsed.stats || parsed.weak || parsed.v){
+    return { stats:parsed.stats, weak:parsed.weak, sims:parsed.sims, streak:parsed.streak, meta:null };
+  }
+  
+  return null;
+}
+
+function applyImportData(result, err){
+  if(!result){ if(err){ err.textContent='❌ Formato file non riconosciuto.'; err.style.display='block'; } return false; }
+  if(result.error){ if(err){ err.textContent='❌ '+result.error; err.style.display='block'; } return false; }
+  if(result.stats) storeSave('stats',result.stats);
+  if(result.weak)  storeSave('weak',result.weak);
+  if(result.sims)  storeSave('sims',result.sims);
+  if(result.streak)storeSave('streak',result.streak);
+  // Toast conferma
+  const st=result.stats||{}, wk=result.weak||{}, sm=result.sims||[];
+  let tot=0,cor=0;
+  Object.values(st).forEach(s=>{tot+=s.asked||0;cor+=s.correct||0;});
+  const pct=tot>0?Math.round(cor/tot*100):0;
+  const metaInfo=result.meta?`<br><span style="font-size:.75rem;opacity:.8">📂 da ${result.meta.dispositivo_origine} · ${result.meta.ultimo_aggiornamento} · v${result.meta.versione_file}</span>`:'';
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#166534;color:white;padding:16px 20px;text-align:center;font-size:.88rem;line-height:1.7;box-shadow:0 4px 12px rgba(0,0,0,.3)';
+  toast.innerHTML='✅ <strong>Progressi importati con successo!</strong><br>📊 '+pct+'% &nbsp;|&nbsp; 📝 '+tot+' domande &nbsp;|&nbsp; ⚠️ '+Object.keys(wk).length+' da ripassare &nbsp;|&nbsp; ⏱️ '+sm.length+' simulazioni'+metaInfo;
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(),6000);
+  showProgress();
+  return true;
+}
+
 function doImport(){
   const ta=$i('importTA'); if(!ta)return;
   const err=$i('importErr');
@@ -1114,24 +1231,11 @@ function doImport(){
   }
 
   if(data){
-    if(data.stats) storeSave('stats',data.stats);
-    if(data.weak)  storeSave('weak',data.weak);
-    if(data.sims)  storeSave('sims',data.sims);
-    if(data.streak)storeSave('streak',data.streak);
     if(err) err.style.display='none';
-    // Toast conferma con riepilogo
-    const st=data.stats||{}, wk=data.weak||{}, sm=data.sims||[];
-    let tot=0,cor=0;
-    Object.values(st).forEach(s=>{tot+=s.asked||0;cor+=s.correct||0;});
-    const pct=tot>0?Math.round(cor/tot*100):0;
-    const toast=document.createElement('div');
-    toast.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#166534;color:white;padding:16px 20px;text-align:center;font-size:.88rem;line-height:1.7;box-shadow:0 4px 12px rgba(0,0,0,.3)';
-    toast.innerHTML='✅ <strong>Progressi importati con successo!</strong><br>📊 Media: '+pct+'% &nbsp;|&nbsp; 📝 '+tot+' domande &nbsp;|&nbsp; ⚠️ '+Object.keys(wk).length+' da ripassare &nbsp;|&nbsp; ⏱️ '+sm.length+' simulazioni';
-    document.body.appendChild(toast);
-    setTimeout(()=>toast.remove(),5000);
-    showProgress();
+    const result=parseImportData(data);
+    applyImportData(result, err);
   } else {
-    if(err){ err.textContent='❌ Codice non valido. Usa il pulsante ⬇️ Scarica file .txt per esportare e 📂 Apri file per importare.'; err.style.display='block'; }
+    if(err){ err.textContent='❌ Codice non valido o file corrotto. Usa 📂 Apri file con un file .json esportato da questa app.'; err.style.display='block'; }
   }
 }
 
