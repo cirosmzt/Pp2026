@@ -263,7 +263,7 @@ body{font-family:"OpenDyslexic",Georgia,serif;background:var(--bg);color:var(--t
   <div class="hdr-row">
     <div style="flex:1">
       <div class="hdr-t">🎓 Polizia Penitenziaria 2026</div>
-      <div class="hdr-s">Banca Dati — Studio con metodo &nbsp;·&nbsp; v23</div>
+      <div class="hdr-s">Banca Dati — Studio con metodo &nbsp;·&nbsp; v24</div>
     </div>
     <div class="fc">
       <button class="fb" onclick="chFS(-1)">A-</button>
@@ -895,8 +895,7 @@ function showProgress(){
       <div id="copyOk" style="display:none;margin-top:8px">
         <div style="text-align:center;color:var(--ok);font-size:.82rem;font-weight:bold;margin-bottom:10px">✅ Codice copiato! Come vuoi salvarlo?</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <button onclick="shareVia('email')" class="btn" style="padding:11px;background:#f1f5f9;color:#1e3a5f;border:2px solid var(--brd);font-size:.85rem;font-weight:bold">📧 Email</button>
-          <button onclick="shareVia('notes')" class="btn" style="padding:11px;background:#f1f5f9;color:#1e3a5f;border:2px solid var(--brd);font-size:.85rem;font-weight:bold">📝 Note</button>
+          <button onclick="shareViaEmail()" class="btn" style="width:100%;padding:11px;background:#f1f5f9;color:#1e3a5f;border:2px solid var(--brd);font-size:.85rem;font-weight:bold">📧 Invia per Email</button>
         </div>
         <button onclick="downloadProgressiJson()" class="btn" style="width:100%;padding:12px;background:#166534;color:white;border:none;font-size:.88rem;font-weight:bold;border-radius:10px">⬇️ Scarica file .json</button>
         <div style="font-size:.7rem;color:var(--mu);margin-top:6px;text-align:center">oppure incolla manualmente dove preferisci</div>
@@ -1092,33 +1091,14 @@ function downloadProgressiJson(){
   setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
 }
 
-function shareVia(method){
-  const ta=$i('exportTA'); if(!ta)return;
-  const code=ta.value;
-  const msg='I miei progressi PP2026 — incolla questo codice nella sezione Importa dell app:\n\n'+code;
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(method==='email'){
-    const sub=encodeURIComponent('Progressi PP2026');
-    const body=encodeURIComponent(msg);
+function shareViaEmail(){
+  // Scarica il .json e poi apre email con istruzioni per allegarlo
+  downloadProgressiJson();
+  setTimeout(()=>{
+    const sub=encodeURIComponent('Progressi PP2026 Studio con Metodo');
+    const body=encodeURIComponent('Ciao,\n\nti allego il file progressi_PP2026.json che trovi nei tuoi Download.\n\nAprilo sull altro dispositivo con: Progressi → Importa → Apri file dal dispositivo.\n\nPP2026 Studio con Metodo');
     window.open('mailto:?subject='+sub+'&body='+body,'_blank');
-  } else if(method==='notes'){
-    // Prova sempre Web Share API prima (funziona su mobile)
-    if(navigator.share){
-      navigator.share({ title:'Progressi PP2026', text:msg }).catch(()=>{});
-    } else {
-      // Fallback PC → scarica file .txt per Blocco Note
-      const blob=new Blob([msg],{type:'text/plain;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download='progressi_PP2026.txt';
-      document.body.appendChild(a); a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  } else if(method==='keep'){
-    const txt=encodeURIComponent(msg);
-    window.open('https://keep.google.com/#NOTE/new?text='+txt,'_blank');
-  }
+  }, 800);
 }
 
 function selectAllExport(){
@@ -1527,6 +1507,15 @@ window.addEventListener('DOMContentLoaded', updateRipassoBadge);
 
 /* ── PWA INSTALL ── */
 let pwaPrompt=null;
+/* ── SERVICE WORKER REGISTRATION ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(r=>console.log('SW registrato'))
+      .catch(e=>console.log('SW non disponibile'));
+  });
+}
+
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault(); pwaPrompt=e;
   const bar=document.getElementById('pwaBar');
