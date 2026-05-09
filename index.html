@@ -263,7 +263,7 @@ body{font-family:"OpenDyslexic",Georgia,serif;background:var(--bg);color:var(--t
   <div class="hdr-row">
     <div style="flex:1">
       <div class="hdr-t">🎓 Polizia Penitenziaria 2026</div>
-      <div class="hdr-s">Banca Dati — Studio con metodo &nbsp;·&nbsp; v25</div>
+      <div class="hdr-s">Banca Dati — Studio con metodo &nbsp;·&nbsp; v26</div>
     </div>
     <div class="fc">
       <button class="fb" onclick="chFS(-1)">A-</button>
@@ -696,7 +696,14 @@ function renderStudy(){
 function showDone(){
   show('sDone');
   const pct=(sKnew+sDidnt)?Math.round(sKnew/(sKnew+sDidnt)*100):0;
-  $i('doneStats').innerHTML=`✅ Sapevo: <strong>${sKnew}</strong> &nbsp;❌ Non sapevo: <strong>${sDidnt}</strong><br>Percentuale: <strong>${pct}%</strong>`;
+  const now=new Date();
+  const dataOra=now.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+
+    ' — '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  const materia=studySec==='TUTTE'?'Tutte le materie':studySec;
+  $i('doneStats').innerHTML=`
+    <div style="font-size:.75rem;color:var(--mu);margin-bottom:8px">📅 ${dataOra} &nbsp;·&nbsp; 📚 ${esc(materia)}</div>
+    ✅ Sapevo: <strong>${sKnew}</strong> &nbsp;❌ Non sapevo: <strong>${sDidnt}</strong><br>
+    Percentuale: <strong>${pct}%</strong>`;
   $i('btnRevErr').style.display=sDidnt?'':'none';
 }
 
@@ -1602,4 +1609,4 @@ window.addEventListener('DOMContentLoaded',()=>{
 </div>
 
 </body>
-</html> 
+</html>
