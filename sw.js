@@ -1,4 +1,4 @@
-const CACHE = 'pp2026-v24';
+const CACHE = 'pp2026-v26';
 
 self.addEventListener('install', e => {
   e.waitUntil(
