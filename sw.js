@@ -1,14 +1,8 @@
-const CACHE = 'pp2026-v27';
-
-const FILES_TO_CACHE = [
-  '/',
-  '/index.html'
-];
+const CACHE = 'pp2026-v26';
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE).then(c => c.addAll(['./', './index.html']))
       .then(() => self.skipWaiting())
   );
 });
@@ -23,20 +17,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE).then(cache => cache.put(e.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        if (e.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
-        }
-        return new Response('🔌 Sei offline. Riprova più tardi.', { status: 503 });
-      });
-    })
+    caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return res;
+    }))
   );
 });
