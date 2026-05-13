@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>PP 2026 - v29 Modulare</title>
+    <title>PP 2026 - v29 Modulare Completa</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -14,132 +14,179 @@
             font-family: "OpenDyslexic";
             src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/fonts/OpenDyslexic-Regular.otf");
         }
-        body { font-family: 'OpenDyslexic', sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; font-family: inherit; margin-bottom: 10px; transition: 0.3s; }
-        .btn:active { transform: scale(0.98); }
-        .btn-sec { background: white; color: var(--primary); border: 2px solid var(--primary); }
+        body { font-family: 'OpenDyslexic', sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 15px; padding-bottom: 80px; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #eee; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1rem; font-family: inherit; margin-bottom: 10px; font-weight: bold; }
+        .btn-sec { background: #f0f4f8; color: var(--primary); border: 1px solid var(--primary); }
         .hidden { display: none; }
-        #loading { text-align: center; padding: 50px; }
-        .materia-btn { background: var(--card); border: 2px solid var(--primary); color: var(--primary); margin-bottom: 10px; font-weight: bold; }
-        .progress-bar { background: #eee; border-radius: 10px; height: 10px; margin: 10px 0; overflow: hidden; }
-        .progress-fill { background: var(--ok); height: 100%; width: 0%; transition: 0.5s; }
-        .sync-box { background: #f0f4f8; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 0.8rem; }
+        .materia-btn { background: var(--card); border: 2px solid var(--primary); color: var(--primary); text-align: left; position: relative; }
+        .materia-btn span { font-size: 0.7rem; color: var(--mu); display: block; }
+        .q-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; line-height: 1.4; }
+        .ans-btn { background: #f9f9f9; border: 2px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 10px; width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+        .ans-btn.correct { background: #e6f5ec; border-color: var(--ok); color: var(--ok); }
+        .ans-btn.wrong { background: #fdecea; border-color: var(--err); color: var(--err); }
+        .anchor { color: var(--acc); text-decoration: underline; font-weight: bold; }
+        #loading { text-align: center; padding: 100px 20px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-    <div id="loading">🚀 Caricamento Banca Dati...</div>
+    <div id="loading">🚀 Caricamento Banca Dati (3065 domande)...</div>
 
     <div id="app" class="hidden">
-        <header>
-            <h1>PP 2026 <span style="font-size: 0.8rem; color: var(--mu);">v29</span></h1>
-        </header>
-
-        <div id="main-menu">
-            <div class="card">
-                <h3>📚 Materie</h3>
-                <div id="materie-list"></div>
-            </div>
-
-            <div class="card">
-                <h3>🔄 Sincronizzazione Progressi</h3>
-                <button class="btn btn-sec" onclick="exportProgress()">📤 Esporta Backup (.json)</button>
-                <input type="file" id="importFile" class="hidden" onchange="importProgress(event)">
-                <button class="btn btn-sec" onclick="document.getElementById('importFile').click()">📥 Importa Backup</button>
-            </div>
+        <div id="screen-menu">
+            <h2 style="color: var(--primary); margin-top: 0;">📚 Materie PP 2026</h2>
+            <div id="materie-list"></div>
             
-            <button class="btn" style="background: var(--err);" onclick="clearProgress()">🗑️ Reset Totale</button>
+            <div class="card" style="margin-top: 20px;">
+                <h4 style="margin:0 0 10px 0;">🔄 Backup Dati</h4>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-sec" style="font-size:0.8rem;" onclick="exportProgress()">📤 Esporta</button>
+                    <button class="btn btn-sec" style="font-size:0.8rem;" onclick="document.getElementById('importFile').click()">📥 Importa</button>
+                </div>
+                <input type="file" id="importFile" class="hidden" onchange="importProgress(event)">
+            </div>
         </div>
 
-        <div id="quiz-screen" class="hidden">
-            <button class="btn btn-sec" onclick="showMenu()">⬅️ Torna al Menu</button>
-            <div class="card" id="question-box"></div>
+        <div id="screen-quiz" class="hidden">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <button class="btn btn-sec" style="width:auto; padding:5px 15px;" onclick="showMenu()">🏠 Menu</button>
+                <div id="quiz-info" style="font-size:0.8rem; font-weight:bold;"></div>
+            </div>
+            <div class="card">
+                <div class="q-text" id="q-text"></div>
+                <div id="ans-list"></div>
+            </div>
+            <div id="explanation" class="card hidden" style="background:#fffef0; border-color:#f5eecb;">
+                <div id="anchor-msg"></div>
+                <button class="btn" style="margin-top:10px;" onclick="nextQuestion()">Prossima Domanda ➡️</button>
+            </div>
         </div>
     </div>
 
     <script>
         let ALL_DATA = [];
-        let MATERIE = [];
-        let USER_PROGRESS = JSON.parse(localStorage.getItem('pp2026_progress')) || { errors: [], completed: [] };
+        let CURRENT_LIST = [];
+        let CURRENT_IDX = 0;
+        let USER_PROGRESS = JSON.parse(localStorage.getItem('pp2026_pwa_data')) || { errors: [], completed: [] };
 
-        // 1. FETCH DATABASE MODULARE
-        async function loadData() {
+        // 1. Carica Banca Dati Esterna
+        async function loadApp() {
             try {
-                const response = await fetch('banca_dati.json');
-                ALL_DATA = await response.json();
-                
-                // Estrae materie uniche
-                MATERIE = [...new Set(ALL_DATA.map(q => q.s))];
-                renderMenu();
-                
+                const res = await fetch('banca_dati.json');
+                if (!res.ok) throw new Error();
+                ALL_DATA = await res.json();
+                renderMaterie();
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
             } catch (e) {
-                document.getElementById('loading').innerHTML = "❌ Errore caricamento banca_dati.json. Verifica di aver caricato il file su GitHub.";
+                document.getElementById('loading').innerHTML = "❌ Errore: Assicurati di aver caricato il file 'banca_dati.json' su GitHub.";
             }
         }
 
-        function renderMenu() {
+        function renderMaterie() {
             const list = document.getElementById('materie-list');
+            const materie = [...new Set(ALL_DATA.map(q => q.s))];
             list.innerHTML = '';
-            MATERIE.forEach(m => {
-                const count = ALL_DATA.filter(q => q.s === m).length;
+            materie.forEach(m => {
+                const total = ALL_DATA.filter(q => q.s === m).length;
                 const btn = document.createElement('button');
                 btn.className = 'btn materia-btn';
-                btn.innerText = `${m} (${count} q.)`;
+                btn.innerHTML = `${m} <span>${total} domande totali</span>`;
                 btn.onclick = () => startQuiz(m);
                 list.appendChild(btn);
             });
         }
 
         function startQuiz(materia) {
-            alert("Modalità Studio per " + materia + " avviata! (Logica simulazione v28 attiva)");
-            // Qui andrebbe la logica di visualizzazione domande v28
+            CURRENT_LIST = ALL_DATA.filter(q => q.s === materia);
+            CURRENT_IDX = 0;
+            showScreen('screen-quiz');
+            renderQuestion();
         }
 
-        function showMenu() {
-            document.getElementById('main-menu').classList.remove('hidden');
-            document.getElementById('quiz-screen').classList.add('hidden');
-        }
-
-        // 2. FUNZIONI SINCRONIZZAZIONE
-        function exportProgress() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(USER_PROGRESS));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "progressi_pp2026.json");
-            dlAnchorElem.click();
-        }
-
-        function importProgress(event) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                USER_PROGRESS = JSON.parse(e.target.result);
-                localStorage.setItem('pp2026_progress', JSON.stringify(USER_PROGRESS));
-                alert("✅ Progressi importati correttamente!");
-                location.reload();
-            };
-            reader.readAsText(event.target.files[0]);
-        }
-
-        function clearProgress() {
-            if(confirm("Vuoi davvero cancellare tutto?")) {
-                localStorage.removeItem('pp2026_progress');
-                location.reload();
-            }
-        }
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('SW v29 pronto');
-                });
+        function renderQuestion() {
+            const q = CURRENT_LIST[CURRENT_IDX];
+            document.getElementById('quiz-info').innerText = `${q.s} - ${CURRENT_IDX + 1}/${CURRENT_LIST.length}`;
+            document.getElementById('q-text').innerText = q.d;
+            document.getElementById('explanation').classList.add('hidden');
+            
+            const ansList = document.getElementById('ans-list');
+            ansList.innerHTML = '';
+            
+            q.r.forEach((testo, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'ans-btn';
+                btn.innerText = testo;
+                btn.onclick = () => checkAnswer(i, q.esatta, btn);
+                ansList.appendChild(btn);
             });
         }
 
-        loadData();
+        function checkAnswer(scelta, corretta, btn) {
+            const btns = document.querySelectorAll('.ans-btn');
+            btns.forEach(b => b.disabled = true);
+
+            if (scelta === corretta) {
+                btn.classList.add('correct');
+                // Algoritmo Parola Ancora (Semplificato)
+                const paroleEsatta = CURRENT_LIST[CURRENT_IDX].r[corretta].split(' ');
+                const altreOpzioni = CURRENT_LIST[CURRENT_IDX].r.filter((_, i) => i !== corretta).join(' ');
+                const ancora = paroleEsatta.find(p => p.length > 4 && !altreOpzioni.toLowerCase().includes(p.toLowerCase()));
+                
+                document.getElementById('anchor-msg').innerHTML = ancora ? 
+                    `✅ Corretto! <br><small>Parola àncora suggerita: <span class="anchor">${ancora}</span></small>` : 
+                    `✅ Corretto! Ottimo lavoro.`;
+            } else {
+                btn.classList.add('wrong');
+                btns[corretta].classList.add('correct');
+                document.getElementById('anchor-msg').innerHTML = `❌ Errore. La risposta corretta è evidenziata in verde.`;
+            }
+            document.getElementById('explanation').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            CURRENT_IDX++;
+            if (CURRENT_IDX < CURRENT_LIST.length) {
+                renderQuestion();
+            } else {
+                alert("Materia completata!");
+                showMenu();
+            }
+        }
+
+        function showScreen(id) {
+            document.getElementById('screen-menu').classList.add('hidden');
+            document.getElementById('screen-quiz').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function showMenu() { showScreen('screen-menu'); }
+
+        // Sincronizzazione
+        function exportProgress() {
+            const data = JSON.stringify(USER_PROGRESS);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'backup_pp2026.json'; a.click();
+        }
+
+        function importProgress(e) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                USER_PROGRESS = JSON.parse(event.target.result);
+                localStorage.setItem('pp2026_pwa_data', JSON.stringify(USER_PROGRESS));
+                alert("Dati importati!"); location.reload();
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+        }
+
+        loadApp();
     </script>
 </body>
 </html>
