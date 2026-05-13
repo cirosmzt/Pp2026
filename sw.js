@@ -2,7 +2,8 @@ const CACHE = 'pp2026-v29';
 const FILES = [
   './',
   './index.html',
-  './banca_dati.json'
+  './banca_dati.json',
+  './manifest.json'
 ];
 
 self.addEventListener('install', e => {
