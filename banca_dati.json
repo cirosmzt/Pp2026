@@ -1,1 +1,12 @@
-[]
+[{
+    "s": "DIRITTO PENITENZIARIO",
+    "d": "L'ordinamento penitenziario è disciplinato dalla legge:",
+    "r": ["26 luglio 1975, n. 354", "24 novembre 1981, n. 689", "10 ottobre 1986, n. 663"],
+    "esatta": 0
+  },
+  {
+    "s": "DIRITTO PENITENZIARIO",
+    "d": "Il trattamento penitenziario deve essere conforme a:",
+    "r": ["Umanità e dignità della persona", "Rigorosa disciplina", "Isolamento continuo"],
+    "esatta": 0
+  }]
